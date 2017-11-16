@@ -5,8 +5,13 @@ import sys
 import os
 import json
 import time
-from config import DATA
-from comms import SCK_server, SCK_client
+
+# from config import DATA
+# from comms import SCK_server, SCK_client
+from pypetalo.config import DATA as DATA
+from pypetalo.comms import SCK_server as SCK_server
+from pypetalo.comms import SCK_client as SCK_client
+
 import fcntl
 
 
