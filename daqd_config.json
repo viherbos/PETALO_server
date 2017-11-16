@@ -1,0 +1,9 @@
+{"path_name": "./sw_daq_tofpet2/",
+  "ext_ip": "158.42.34.154",
+  "client_port": 5005,
+  "socket": "/tmp/d.sock",
+  "server_port": 5005,
+  "daq_sharem": "/dev/shm/daqd_shm",
+  "buffer_size": 1024,
+  "daq_type": "GBE",
+  "localhost": "158.42.105.105"}
