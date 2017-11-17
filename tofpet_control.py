@@ -153,8 +153,20 @@ class MSG_executer(Thread):
 
                 elif (self.item['command']=="C_FILTER"):
                     # Coincidence Filter
+                    os.chdir("/home/viherbos/TOFPET2/sw_daq_tofpet2")
                     # ./convert_raw_to_coincidence --config config.ini -i data/my_data -o data/my_data_coincidence --writeBinary
                     print ("Applying coarse coincidence filter")
+                    self.config_call = "./convert_raw_to_coincidence " + \
+                                    "--config config.ini " + \
+                                    "-i data/my_data " + \
+                                    "-o "+ self.item['arg1']+' '\
+                                    "--writeBinary"
+                    chain = self.config_call
+                    
+                    self.cfg_child = sbp.Popen( chain,
+                                                shell=True
+                                                )
+
 
                 elif (self.item['command']=='STOP'):
                     print ("Quit Control")
