@@ -142,7 +142,7 @@ class MSG_executer(Thread):
                     os.chdir("/home/viherbos/TOFPET2/sw_daq_tofpet2")
                     self.config_call = "./acquire_sipm_data " + \
                                     "--config config.ini " + \
-                                    "-o data/my_data " + \
+                                    "-o " + self.item['arg2']+' ' \
                                     "--time "+ self.item['arg1']+' '\
                                     "--mode qdc"
                     chain = self.config_call
@@ -158,11 +158,11 @@ class MSG_executer(Thread):
                     print ("Applying coarse coincidence filter")
                     self.config_call = "./convert_raw_to_coincidence " + \
                                     "--config config.ini " + \
-                                    "-i data/my_data " + \
-                                    "-o "+ self.item['arg1']+' '\
+                                    "-i "+ self.item['arg1']+' '\
+                                    "-o "+ self.item['arg2']+' '\
                                     "--writeBinary"
                     chain = self.config_call
-                    
+
                     self.cfg_child = sbp.Popen( chain,
                                                 shell=True
                                                 )
