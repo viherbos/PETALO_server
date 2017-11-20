@@ -197,15 +197,15 @@ if __name__ == "__main__":
     thread_daq    = DAQ(sh_data,stopper)
     thread_SERVER = SCK_server(sh_data,srv_queue,stopper)
     thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper)
-    #thread_CLIENT = SCK_client(sh_data,clt_queue)
+    Logger        = Logger_TX(sh_data)
 
     # Start
-    #thread_CLIENT.start()
+    Logger()
     thread_daq.start()
     thread_SERVER.start()
     thread_EXEC.start()
 
-  
+
 
     while not stopper.is_set():
         try:
