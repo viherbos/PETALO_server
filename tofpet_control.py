@@ -11,6 +11,7 @@ import time
 from pypetalo.config import DATA as DATA
 from pypetalo.comms import SCK_server as SCK_server
 from pypetalo.comms import SCK_client as SCK_client
+from pypetalo.comms import Logger_TX as Logger_TX
 
 import fcntl
 
