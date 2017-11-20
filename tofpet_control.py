@@ -74,11 +74,11 @@ class DAQ(Thread):
                     # self.daqlogfile.write(nextline)
                     # sys.stdout.flush()
                 pass
-            self.daq_child.terminate()
-            out_txt_daq = self.daq_child.stdout.read()
-            self.daqlogfile.write(out_txt_daq)
-            sys.stdout.write(out_txt_daq)
-            self.daqlogfile.close()
+            # self.daq_child.terminate()
+            # out_txt_daq = self.daq_child.stdout.read()
+            # self.daqlogfile.write(out_txt_daq)
+            # sys.stdout.write(out_txt_daq)
+            # self.daqlogfile.close()
             print "DAQ THREAD IS DEAD"
 
 
@@ -204,6 +204,8 @@ if __name__ == "__main__":
     thread_daq.start()
     thread_SERVER.start()
     thread_EXEC.start()
+
+  
 
     while not stopper.is_set():
         try:

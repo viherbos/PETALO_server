@@ -8,6 +8,20 @@ import socket as sk
 
 BYE_MSG={'command':"BYE",'arg1':"",'arg2':""}
 
+class Logger_TX():
+
+    def __init__(self, upper_class):
+        self.uc = upper_class
+
+    def __call__(self):
+        try:
+            sock = sk.socket(AF_INET, SOCK_STREAM)
+            sock.connect((self.uc.daqd_cfg['ext_ip'],
+                            int(self.uc.daqd_cfg['client_port'])))
+                                              # caller operates in client mode
+            file = sock.makefile('w',0)       # file interface: text, buffered
+            sys.stdout = file                 # make prints go to sock.send
+
 class SCK_server(Thread):
 
     def __init__(self,upper_class,queue,stopper):
