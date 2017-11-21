@@ -75,6 +75,7 @@ class DAQ(Thread):
                     # self.daqlogfile.write(nextline)
                     # sys.stdout.flush()
                 pass
+
             self.daq_child.terminate()
             out_txt_daq = self.daq_child.stdout.read()
             self.daqlogfile.write(out_txt_daq)
@@ -123,8 +124,16 @@ class MSG_executer(Thread):
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
-                                                shell=True
+                                                shell=True,
+                                                stdout=sbp.PIPE,
+                                                stderr=sbp.PIPE
                                                 )
+                    while True:
+                        inline = self.cfg_child.stdout.readline()
+                        if not inline:
+                            break
+                        sys.stdout.write(inline)
+                        sys.stdout.flush()
                     #sbp.check_output(chain,shell=True)
 
                 elif (self.item['command']=="TEMP"):
@@ -134,7 +143,8 @@ class MSG_executer(Thread):
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
-                                                shell=True
+                                                shell=True,
+                                                stdout=sbp.PIPE
                                                 )
 
                 elif (self.item['command']=="ACQUIRE"):
@@ -149,8 +159,17 @@ class MSG_executer(Thread):
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
-                                                shell=True
+                                                shell=True,
+                                                stdout=sbp.PIPE,
+                                                stderr=sbp.PIPE
                                                 )
+                    #sbp.check_output(chain,shell=True)
+                    while True:
+                        inline = self.cfg_child.stdout.readline()
+                        if not inline:
+                            break
+                        sys.stdout.write(inline)
+                        sys.stdout.flush()
 
                 elif (self.item['command']=="C_FILTER"):
                     # Coincidence Filter
@@ -165,9 +184,16 @@ class MSG_executer(Thread):
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
-                                                shell=True
+                                                shell=True,
+                                                stdout=sbp.PIPE,
+                                                stderr=sbp.PIPE
                                                 )
-
+                    while True:
+                        inline = self.cfg_child.stdout.readline()
+                        if not inline:
+                            break
+                        sys.stdout.write(inline)
+                        sys.stdout.flush()
 
                 elif (self.item['command']=='STOP'):
                     print ("Quit Control")
@@ -198,10 +224,10 @@ if __name__ == "__main__":
     thread_daq    = DAQ(sh_data,stopper)
     thread_SERVER = SCK_server(sh_data,srv_queue,stopper)
     thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper)
-    Logger        = Logger_TX(sh_data)
+    logger        = Logger_TX(sh_data)
 
     # Start
-    Logger()
+    logger()
     thread_daq.start()
     thread_SERVER.start()
     thread_EXEC.start()
@@ -221,7 +247,7 @@ if __name__ == "__main__":
     thread_SERVER.join()
     thread_EXEC.join()
     thread_daq.join()
-    #thread_CLIENT.join()
+    #thread_logger.join()
 
 
     # First time Jason writing
