@@ -18,8 +18,8 @@ class Logger_TX():
         self.sock = sk.socket(sk.AF_INET, sk.SOCK_STREAM)
         self.sock.connect((self.uc.daqd_cfg['ext_ip'],
                            int(self.uc.daqd_cfg['client_port']+1)))
-        file = self.sock.makefile('w')                 
-        sys.stdout = file
+        #file = self.sock.makefile('w',1024)
+        return self.sock
 
 class SCK_server(Thread):
 

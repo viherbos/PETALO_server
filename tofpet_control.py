@@ -94,11 +94,12 @@ class DAQ(Thread):
 
 class MSG_executer(Thread):
 
-    def __init__(self,upper_class,queue,stopper):
+    def __init__(self,upper_class,queue,stopper,logger):
         self.uc = upper_class
         super(MSG_executer,self).__init__()
         self.queue = queue
         self.stopper = stopper
+        self.sklog = logger
 
     def run(self):
         while not self.stopper.is_set():
@@ -164,12 +165,11 @@ class MSG_executer(Thread):
                                                 stderr=sbp.PIPE
                                                 )
                     #sbp.check_output(chain,shell=True)
-                    while True:
-                        inline = self.cfg_child.stdout.readline()
-                        if not inline:
-                            break
-                        sys.stdout.write(inline)
+                    for line in self.cfg_child.stdout:
+                        sys.stdout.write(line)
+                        self.sklog.send(line)
                         sys.stdout.flush()
+                        self.cfg_child.stdout.flush()
 
                 elif (self.item['command']=="C_FILTER"):
                     # Coincidence Filter
@@ -220,19 +220,21 @@ if __name__ == "__main__":
     clt_queue = Queue()
     stopper = Event()
 
+    logger        = Logger_TX(sh_data)
     # Start DAQD utility
     thread_daq    = DAQ(sh_data,stopper)
     thread_SERVER = SCK_server(sh_data,srv_queue,stopper)
-    thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper)
-    logger        = Logger_TX(sh_data)
+    socket_logger = logger()
+    thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper,socket_logger)
+
 
     # Start
-    logger()
     thread_daq.start()
     thread_SERVER.start()
     thread_EXEC.start()
 
-
+    # aux_log = logger()
+    # sys.stdout = aux_log #open('log.text', 'w')
 
     while not stopper.is_set():
         try:
@@ -247,6 +249,7 @@ if __name__ == "__main__":
     thread_SERVER.join()
     thread_EXEC.join()
     thread_daq.join()
+    #aux_log.close()
     #thread_logger.join()
 
 
