@@ -61,8 +61,9 @@ class DAQ(Thread):
             self.daq_child = sbp.Popen( chain,
                                         #[self.daqd_call,self.daqd_args1,self.daqd_args2],
                                         shell=True,
-                                        stdout=sbp.PIPE
-                                        #stderr=sbp.STDOUT
+                                        stdout=sbp.PIPE,
+                                        stderr=sbp.PIPE,
+                                        bufsize=1
                                         )
 
             while not self.stopper.is_set():
@@ -71,15 +72,17 @@ class DAQ(Thread):
                 # print nextline.decode()
                 # time.sleep(0.5)
                 # if nextline != '':
-                    # sys.stdout.write(nextline)
-                    # self.daqlogfile.write(nextline)
-                    # sys.stdout.flush()
-                pass
+                #     sys.stdout.write(nextline)
+                #     self.daqlogfile.write(nextline)
+                #     sys.stdout.flush()
+                #out_txt_daq = self.daq_child.communicate()
+                daq_stdout,daq_stderr = self.daq_child.stdout.readline(),
+                                        self.daq_child.stderr.readline()
+                self.daqlogfile.write(out_txt_daq)
+                sys.stdout.write(out_txt_daq)
+                sys.stdout.flush()
 
             self.daq_child.terminate()
-            out_txt_daq = self.daq_child.stdout.read()
-            self.daqlogfile.write(out_txt_daq)
-            sys.stdout.write(out_txt_daq)
             self.daqlogfile.close()
             print "DAQ THREAD IS DEAD"
 
@@ -167,7 +170,7 @@ class MSG_executer(Thread):
                     #sbp.check_output(chain,shell=True)
                     for line in self.cfg_child.stdout:
                         sys.stdout.write(line)
-                        self.sklog.send(line)
+                        self.sklog.sendall(line)
                         sys.stdout.flush()
                         self.cfg_child.stdout.flush()
 
@@ -223,7 +226,10 @@ if __name__ == "__main__":
     logger        = Logger_TX(sh_data)
     # Start DAQD utility
     thread_daq    = DAQ(sh_data,stopper)
-    thread_SERVER = SCK_server(sh_data,srv_queue,stopper)
+    thread_SERVER = SCK_server( sh_data,
+                                srv_queue,
+                                stopper,
+                                sh_DATA.daqd_cfg['server_port'])
     socket_logger = logger()
     thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper,socket_logger)
 
