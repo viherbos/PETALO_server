@@ -75,10 +75,9 @@ class DAQ(Thread):
                 #     sys.stdout.write(nextline)
                 #     self.daqlogfile.write(nextline)
                 #     sys.stdout.flush()
-                #out_txt_daq = self.daq_child.communicate()
-                daq_stdout,daq_stderr = self.daq_child.stdout.readline(),
-                                        self.daq_child.stderr.readline()
-                self.daqlogfile.write(out_txt_daq)
+            #out_txt_daq = self.daq_child.communicate()
+            #self.daqlogfile.write(out_txt_daq)
+                out_txt_daq = self.daq_child.stdout.readline()
                 sys.stdout.write(out_txt_daq)
                 sys.stdout.flush()
 
@@ -97,12 +96,12 @@ class DAQ(Thread):
 
 class MSG_executer(Thread):
 
-    def __init__(self,upper_class,queue,stopper,logger):
+    def __init__(self,upper_class,queue,stopper,queue_log):
         self.uc = upper_class
         super(MSG_executer,self).__init__()
         self.queue = queue
         self.stopper = stopper
-        self.sklog = logger
+        self.queue_log = queue_log
 
     def run(self):
         while not self.stopper.is_set():
@@ -168,11 +167,15 @@ class MSG_executer(Thread):
                                                 stderr=sbp.PIPE
                                                 )
                     #sbp.check_output(chain,shell=True)
-                    for line in self.cfg_child.stdout:
-                        sys.stdout.write(line)
-                        self.sklog.sendall(line)
+                    while True:
+                        inline = self.cfg_child.stdout.readline()
+                        if not inline:
+                            break
+                        sys.stdout.write(inline)
+                        self.queue_log.put(inline)
                         sys.stdout.flush()
-                        self.cfg_child.stdout.flush()
+
+
 
                 elif (self.item['command']=="C_FILTER"):
                     # Coincidence Filter
@@ -220,22 +223,27 @@ if __name__ == "__main__":
 
     sh_data = DATA(read=True)
     srv_queue = Queue()
+    log_queue = Queue()
     clt_queue = Queue()
     stopper = Event()
 
-    logger        = Logger_TX(sh_data)
+    thread_logger = SCK_client( sh_data,
+                                log_queue,
+                                stopper,
+                                int(sh_data.daqd_cfg['server_port'])+1)
     # Start DAQD utility
     thread_daq    = DAQ(sh_data,stopper)
     thread_SERVER = SCK_server( sh_data,
                                 srv_queue,
                                 stopper,
-                                sh_DATA.daqd_cfg['server_port'])
-    socket_logger = logger()
-    thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper,socket_logger)
+                                int(sh_data.daqd_cfg['server_port']))
+
+    thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper,log_queue)
 
 
     # Start
     thread_daq.start()
+    thread_logger.start()
     thread_SERVER.start()
     thread_EXEC.start()
 
@@ -252,9 +260,11 @@ if __name__ == "__main__":
     stopper.set()
     thread_daq.stop()
 
+
     thread_SERVER.join()
     thread_EXEC.join()
     thread_daq.join()
+    thread_logger.join()
     #aux_log.close()
     #thread_logger.join()
 
