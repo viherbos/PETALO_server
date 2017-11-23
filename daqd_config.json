@@ -1,6 +1,6 @@
 {"path_name": "./sw_daq_tofpet2/",
-  "ext_ip": "158.42.34.154",
-  "client_port": 5005,
+  "ext_ip": "158.42.244.11",
+  "client_port": 5006,
   "socket": "/tmp/d.sock",
   "server_port": 5005,
   "daq_sharem": "/dev/shm/daqd_shm",

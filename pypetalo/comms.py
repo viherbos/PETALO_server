@@ -8,18 +8,7 @@ import socket as sk
 
 BYE_MSG={'command':"BYE",'arg1':"",'arg2':""}
 
-class Logger_TX():
 
-    def __init__(self, upper_class):
-        self.uc = upper_class
-
-    def __call__(self):
-        # Add try
-        self.sock = sk.socket(sk.AF_INET, sk.SOCK_STREAM)
-        self.sock.connect((self.uc.daqd_cfg['ext_ip'],
-                           int(self.uc.daqd_cfg['client_port']+1)))
-        #file = self.sock.makefile('w',1024)
-        return self.sock
 
 class SCK_server(Thread):
 
@@ -46,8 +35,8 @@ class SCK_server(Thread):
             except sk.timeout:
                 pass
             else:
-                print ("Connection Host/Address: %s  %s" % (self.uc.daqd_cfg['localhost'],
-                                                        self.addr))
+                #print ("Connection Host/Address: %s  %s" % (self.uc.daqd_cfg['localhost'],
+                #                                        self.addr))
                 try:
                     self.s.settimeout(10.0)
                     # Ten seconds to receive the data
@@ -81,20 +70,18 @@ class SCK_client(Thread):
                 pass
                 # Wait for another timeout
             else:
-
                 self.s = sk.socket(sk.AF_INET, sk.SOCK_STREAM)
                 try:
-                    print self.uc.daqd_cfg['ext_ip']
+                    #print self.uc.daqd_cfg['ext_ip']
                     self.s.connect((self.uc.daqd_cfg['ext_ip'],
                                     int(self.uc.daqd_cfg['client_port'])))
                     self.s.send(self.item)
-                    print ("Data Sent: %s" % self.item)
+                    #print ("Data Sent: %s" % self.item)
                     # Insert handshake
                     self.s.settimeout(5.0)
                     try:
                         # ADD TIMEOUT Mechanism !!!!
                         data_r = json.loads(self.s.recv(int(self.uc.daqd_cfg['buffer_size'])))
-                        print data_r
                         if (data_r['command']!='BYE'):
                             print ('Communication Error handshake failure (1)')
                             # A JSON stream has been received but it isn't correct

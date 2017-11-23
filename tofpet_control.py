@@ -5,15 +5,14 @@ import sys
 import os
 import json
 import time
-
+import socket as sk
 # from config import DATA
 # from comms import SCK_server, SCK_client
 from pypetalo.config import DATA as DATA
 from pypetalo.comms import SCK_server as SCK_server
 from pypetalo.comms import SCK_client as SCK_client
-from pypetalo.comms import Logger_TX as Logger_TX
-
 import fcntl
+
 
 
 class DAQ(Thread):
@@ -60,8 +59,8 @@ class DAQ(Thread):
 
             self.daq_child = sbp.Popen( chain,
                                         #[self.daqd_call,self.daqd_args1,self.daqd_args2],
-                                        shell=True,
-                                        stdout=sbp.PIPE
+                                        shell=True
+                                        #stdout=sbp.PIPE
                                         #stderr=sbp.STDOUT
                                         )
 
@@ -77,10 +76,10 @@ class DAQ(Thread):
                 pass
 
             self.daq_child.terminate()
-            out_txt_daq = self.daq_child.stdout.read()
-            self.daqlogfile.write(out_txt_daq)
-            sys.stdout.write(out_txt_daq)
-            self.daqlogfile.close()
+            # out_txt_daq = self.daq_child.stdout.read()
+            # self.daqlogfile.write(out_txt_daq)
+            # sys.stdout.write(out_txt_daq)
+            # self.daqlogfile.close()
             print "DAQ THREAD IS DEAD"
 
 
@@ -94,12 +93,23 @@ class DAQ(Thread):
 
 class MSG_executer(Thread):
 
-    def __init__(self,upper_class,queue,stopper,logger):
+    def __init__(self,upper_class,queue,stopper, q_client):
         self.uc = upper_class
         super(MSG_executer,self).__init__()
         self.queue = queue
         self.stopper = stopper
-        self.sklog = logger
+        self.q_client = q_client
+
+
+
+    def logger(self):
+        while True:
+            line = self.cfg_child.stdout.readline()
+            #stdout.append(line)
+            print line
+            self.q_client.put(line)
+            if line == '' and self.cfg_child.poll() != None:
+                break
 
     def run(self):
         while not self.stopper.is_set():
@@ -125,16 +135,13 @@ class MSG_executer(Thread):
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
-                                                shell=True,
-                                                stdout=sbp.PIPE,
-                                                stderr=sbp.PIPE
-                                                )
-                    while True:
-                        inline = self.cfg_child.stdout.readline()
-                        if not inline:
-                            break
-                        sys.stdout.write(inline)
-                        sys.stdout.flush()
+                                                shell=True)
+                    # while True:
+                    #     inline = self.cfg_child.stdout.readline()
+                    #     if not inline:
+                    #         break
+                    #     sys.stdout.write(inline)
+                    #     sys.stdout.flush()
                     #sbp.check_output(chain,shell=True)
 
                 elif (self.item['command']=="TEMP"):
@@ -144,8 +151,8 @@ class MSG_executer(Thread):
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
-                                                shell=True,
-                                                stdout=sbp.PIPE
+                                                shell=True
+                                                #stdout=sbp.PIPE
                                                 )
 
                 elif (self.item['command']=="ACQUIRE"):
@@ -162,14 +169,18 @@ class MSG_executer(Thread):
                     self.cfg_child = sbp.Popen( chain,
                                                 shell=True,
                                                 stdout=sbp.PIPE,
-                                                stderr=sbp.PIPE
+                                                stderr=sbp.STDOUT
                                                 )
+                    self.logger()
+                    #logger(self.cfg_child)
+                    #thread_logger.join()
+
                     #sbp.check_output(chain,shell=True)
-                    for line in self.cfg_child.stdout:
-                        sys.stdout.write(line)
-                        self.sklog.send(line)
-                        sys.stdout.flush()
-                        self.cfg_child.stdout.flush()
+                    # for line in self.cfg_child.stdout:
+                    #     sys.stdout.write(line)
+                    #     self.sklog.send(line)
+                    #     sys.stdout.flush()
+                    #     self.cfg_child.stdout.flush()
 
                 elif (self.item['command']=="C_FILTER"):
                     # Coincidence Filter
@@ -184,16 +195,16 @@ class MSG_executer(Thread):
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
-                                                shell=True,
-                                                stdout=sbp.PIPE,
-                                                stderr=sbp.PIPE
+                                                shell=True
+                                                #stdout=sbp.PIPE,
+                                                #stderr=sbp.PIPE
                                                 )
-                    while True:
-                        inline = self.cfg_child.stdout.readline()
-                        if not inline:
-                            break
-                        sys.stdout.write(inline)
-                        sys.stdout.flush()
+                    # while True:
+                    #     inline = self.cfg_child.stdout.readline()
+                    #     if not inline:
+                    #         break
+                    #     sys.stdout.write(inline)
+                    #     sys.stdout.flush()
 
                 elif (self.item['command']=='STOP'):
                     print ("Quit Control")
@@ -218,19 +229,21 @@ if __name__ == "__main__":
     sh_data = DATA(read=True)
     srv_queue = Queue()
     clt_queue = Queue()
+    q_client  = Queue()
+
     stopper = Event()
 
-    logger        = Logger_TX(sh_data)
     # Start DAQD utility
     thread_daq    = DAQ(sh_data,stopper)
     thread_SERVER = SCK_server(sh_data,srv_queue,stopper)
-    socket_logger = logger()
-    thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper,socket_logger)
+    thread_CLIENT = SCK_client(sh_data,q_client,stopper)
+    thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper,q_client)
 
 
     # Start
     thread_daq.start()
     thread_SERVER.start()
+    thread_CLIENT.start()
     thread_EXEC.start()
 
     # aux_log = logger()
@@ -247,10 +260,9 @@ if __name__ == "__main__":
     thread_daq.stop()
 
     thread_SERVER.join()
+    thread_CLIENT.join()
     thread_EXEC.join()
     thread_daq.join()
-    #aux_log.close()
-    #thread_logger.join()
 
 
     # First time Jason writing
