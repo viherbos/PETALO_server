@@ -79,7 +79,6 @@ class SCK_client(Thread):
                     self.s.send(self.item)
                     # print ("Data Sent: %s" % self.item)
                     # Insert handshake
-
                     try:
                         # ADD TIMEOUT Mechanism !!!!
                         self.s.settimeout(5.0)
