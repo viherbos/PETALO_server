@@ -199,7 +199,6 @@ if __name__ == "__main__":
 
     # Start
     thread_daq.start()
-    thread_logger.start()
     thread_SERVER.start()
     thread_LOGGER.start()
     thread_LOGGER2.start()

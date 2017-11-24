@@ -60,8 +60,6 @@ class SCK_client(Thread):
         super(SCK_client,self).__init__()
         self.queue = queue
         self.stopper = stopper
-        self.port = port
-
 
     def run(self):
       while not self.stopper.is_set():
