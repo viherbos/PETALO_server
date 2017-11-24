@@ -17,29 +17,19 @@ import fcntl
 
 class DAQ(Thread):
 
-    def __init__(self, upper_class, stopper):
+    def __init__(self, upper_class, stopper, q_client):
         self.uc = upper_class
         super(DAQ,self).__init__()
         self.stopper = stopper
+        self.q_client = q_client
 
     def stop(self):
         self.daq_child.terminate()
 
-    # https://gist.github.com/sebclaeys/1232088
-    # Non blocking version of read stdout
-    # Doesn't work with daq (no idea)
-    def non_block_read(self, daq_child):
-        fd = daq_child.fileno()
-        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-        try:
-            return daq_child.read()
-        except:
-            return ""
 
 
     def run(self):
-        # # Starts background process for DAQD communications
+        # Starts background process for DAQD communications
         try:
             self.daqlogfile = open(self.uc.out_log,'w')
 
@@ -54,34 +44,21 @@ class DAQ(Thread):
             self.daqd_args1 = "--socket-name="+self.uc.daqd_cfg['socket']
             self.daqd_args2 = "--daq-type="+self.uc.daqd_cfg['daq_type']
 
-            #print self.daqd_call + self.daqd_args1 + self.daqd_args2
             chain = self.daqd_call+' '+self.daqd_args1+' '+self.daqd_args2+' '
 
             self.daq_child = sbp.Popen( chain,
-                                        #[self.daqd_call,self.daqd_args1,self.daqd_args2],
-                                        shell=True
-                                        #stdout=sbp.PIPE
-                                        #stderr=sbp.STDOUT
+                                        shell=True,
+                                        stdout=sbp.PIPE,
+                                        stderr=sbp.STDOUT
                                         )
+            #
+            while self.daq_child.poll() == None:
+                 pass
 
-            while not self.stopper.is_set():
-
-                # nextline = self.non_block_read(self.daq_child.stdout)
-                # print nextline.decode()
-                # time.sleep(0.5)
-                # if nextline != '':
-                    # sys.stdout.write(nextline)
-                    # self.daqlogfile.write(nextline)
-                    # sys.stdout.flush()
-                pass
-
-            self.daq_child.terminate()
-            # out_txt_daq = self.daq_child.stdout.read()
-            # self.daqlogfile.write(out_txt_daq)
-            # sys.stdout.write(out_txt_daq)
-            # self.daqlogfile.close()
             print "DAQ THREAD IS DEAD"
-
+            self.q_client.put("\n \n DAQ is not working \n \n")
+            self.daqlogfile.write(self.daq_child.stdout.read())
+            self.daqlogfile.close()
 
             #except:
             #    print "DAQ Initialization Failure!!"
@@ -105,8 +82,7 @@ class MSG_executer(Thread):
     def logger(self):
         while True:
             line = self.cfg_child.stdout.readline()
-            #stdout.append(line)
-            print line
+            sys.stdout.write(line)
             self.q_client.put(line)
             if line == '' and self.cfg_child.poll() != None:
                 break
@@ -136,13 +112,7 @@ class MSG_executer(Thread):
 
                     self.cfg_child = sbp.Popen( chain,
                                                 shell=True)
-                    # while True:
-                    #     inline = self.cfg_child.stdout.readline()
-                    #     if not inline:
-                    #         break
-                    #     sys.stdout.write(inline)
-                    #     sys.stdout.flush()
-                    #sbp.check_output(chain,shell=True)
+
 
                 elif (self.item['command']=="TEMP"):
                     print ("Read TOFPET Temperatures")
@@ -172,15 +142,7 @@ class MSG_executer(Thread):
                                                 stderr=sbp.STDOUT
                                                 )
                     self.logger()
-                    #logger(self.cfg_child)
-                    #thread_logger.join()
 
-                    #sbp.check_output(chain,shell=True)
-                    # for line in self.cfg_child.stdout:
-                    #     sys.stdout.write(line)
-                    #     self.sklog.send(line)
-                    #     sys.stdout.flush()
-                    #     self.cfg_child.stdout.flush()
 
                 elif (self.item['command']=="C_FILTER"):
                     # Coincidence Filter
@@ -199,12 +161,7 @@ class MSG_executer(Thread):
                                                 #stdout=sbp.PIPE,
                                                 #stderr=sbp.PIPE
                                                 )
-                    # while True:
-                    #     inline = self.cfg_child.stdout.readline()
-                    #     if not inline:
-                    #         break
-                    #     sys.stdout.write(inline)
-                    #     sys.stdout.flush()
+
 
                 elif (self.item['command']=='STOP'):
                     print ("Quit Control")
@@ -223,31 +180,29 @@ class MSG_executer(Thread):
 
 if __name__ == "__main__":
 
-    # main_thread = runner()
-    # main_thread.runner()
-
     sh_data = DATA(read=True)
     srv_queue = Queue()
     clt_queue = Queue()
     q_client  = Queue()
+    q_client2  = Queue()
 
     stopper = Event()
 
     # Start DAQD utility
-    thread_daq    = DAQ(sh_data,stopper)
+    thread_daq    = DAQ(sh_data,stopper,q_client2)
     thread_SERVER = SCK_server(sh_data,srv_queue,stopper)
-    thread_CLIENT = SCK_client(sh_data,q_client,stopper)
+    thread_LOGGER = SCK_client(sh_data,q_client,stopper)
+    thread_LOGGER2 = SCK_client(sh_data,q_client2,stopper)
     thread_EXEC   = MSG_executer(sh_data,srv_queue,stopper,q_client)
 
 
     # Start
     thread_daq.start()
     thread_SERVER.start()
-    thread_CLIENT.start()
+    thread_LOGGER.start()
+    thread_LOGGER2.start()
     thread_EXEC.start()
 
-    # aux_log = logger()
-    # sys.stdout = aux_log #open('log.text', 'w')
 
     while not stopper.is_set():
         try:
@@ -260,7 +215,8 @@ if __name__ == "__main__":
     thread_daq.stop()
 
     thread_SERVER.join()
-    thread_CLIENT.join()
+    thread_LOGGER.join()
+    thread_LOGGER2.join()
     thread_EXEC.join()
     thread_daq.join()
 
