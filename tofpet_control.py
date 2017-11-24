@@ -182,6 +182,7 @@ if __name__ == "__main__":
 
     sh_data = DATA(read=True)
     srv_queue = Queue()
+    log_queue = Queue()
     clt_queue = Queue()
     q_client  = Queue()
     q_client2  = Queue()
@@ -198,6 +199,7 @@ if __name__ == "__main__":
 
     # Start
     thread_daq.start()
+    thread_logger.start()
     thread_SERVER.start()
     thread_LOGGER.start()
     thread_LOGGER2.start()
@@ -213,6 +215,7 @@ if __name__ == "__main__":
 
     stopper.set()
     thread_daq.stop()
+
 
     thread_SERVER.join()
     thread_LOGGER.join()

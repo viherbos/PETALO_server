@@ -11,7 +11,6 @@ BYE_MSG={'command':"BYE",'arg1':"",'arg2':""}
 
 
 class SCK_server(Thread):
-    
 
     def __init__(self,upper_class,queue,stopper):
         self.uc = upper_class
@@ -61,10 +60,11 @@ class SCK_client(Thread):
         super(SCK_client,self).__init__()
         self.queue = queue
         self.stopper = stopper
+        self.port = port
 
 
     def run(self):
-        while not self.stopper.is_set():
+      while not self.stopper.is_set():
             try:
                 self.item = self.queue.get(True,timeout=5)
                 # Timeout should decrease computational load
