@@ -11,6 +11,7 @@ BYE_MSG={'command':"BYE",'arg1':"",'arg2':""}
 
 
 class SCK_server(Thread):
+    
 
     def __init__(self,upper_class,queue,stopper):
         self.uc = upper_class
