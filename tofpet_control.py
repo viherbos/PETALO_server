@@ -157,11 +157,11 @@ class MSG_executer(Thread):
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
-                                                shell=True
-                                                #stdout=sbp.PIPE,
-                                                #stderr=sbp.PIPE
+                                                shell=True,
+                                                stdout=sbp.PIPE,
+                                                stderr=sbp.STDOUT
                                                 )
-
+                    self.looger()
 
                 elif (self.item['command']=='STOP'):
                     print ("Quit Control")
