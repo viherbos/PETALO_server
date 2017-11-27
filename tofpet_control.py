@@ -161,7 +161,24 @@ class MSG_executer(Thread):
                                                 stdout=sbp.PIPE,
                                                 stderr=sbp.STDOUT
                                                 )
-                    self.logger()
+
+                    self.c_filt_output = self.cfg_child.stdout.read()
+
+                    try:
+                        with open("c_filt.log",'w') as outfile:
+                            os.chdir("/data")
+                            outfile.write(self.c_filt_output)
+                            outfile.close()
+                    except IOError as e:
+                        print(e)
+
+
+
+                    print "Coincidence Processed - See coincidence.log for details"
+                    self.q_client.put("\n \n Coincidence Processed" + \
+                                    "- See coincidence.log for details \n \n")
+
+
 
                 elif (self.item['command']=='STOP'):
                     print ("Quit Control")
