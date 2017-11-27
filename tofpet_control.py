@@ -12,7 +12,7 @@ from pypetalo.config import DATA as DATA
 from pypetalo.comms import SCK_server as SCK_server
 from pypetalo.comms import SCK_client as SCK_client
 
-from file_utils import coincidence_to_hdf5
+from pypetalo.file_utils import coincidence_to_hdf5 as coincidence_to_hdf5
 
 
 class DAQ(Thread):
