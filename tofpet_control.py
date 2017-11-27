@@ -11,8 +11,8 @@ import socket as sk
 from pypetalo.config import DATA as DATA
 from pypetalo.comms import SCK_server as SCK_server
 from pypetalo.comms import SCK_client as SCK_client
-import fcntl
 
+from file_utils import coincidence_to_hdf5
 
 
 class DAQ(Thread):
@@ -172,6 +172,9 @@ class MSG_executer(Thread):
                     except IOError as e:
                         print(e)
 
+                    coincidence_to_hdf5(ldat_dir  = ".",
+                                        ldat_name = self.item['arg2']+".ldat",
+                                        hdf5_name = self.item['arg2']+".hdf")
 
 
                     print "Coincidence Processed - See coincidence.log for details"
