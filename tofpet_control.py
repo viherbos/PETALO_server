@@ -161,7 +161,7 @@ class MSG_executer(Thread):
                                                 stdout=sbp.PIPE,
                                                 stderr=sbp.STDOUT
                                                 )
-                    self.looger()
+                    self.logger()
 
                 elif (self.item['command']=='STOP'):
                     print ("Quit Control")
