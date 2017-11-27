@@ -6,4 +6,5 @@
   "daq_sharem": "/dev/shm/daqd_shm",
   "buffer_size": 1024,
   "daq_type": "GBE",
-  "localhost": "158.42.105.105"}
+  "localhost": "158.42.105.105",
+  "run":0}

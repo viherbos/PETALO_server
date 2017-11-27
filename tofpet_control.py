@@ -79,13 +79,23 @@ class MSG_executer(Thread):
 
 
 
-    def logger(self):
-        while True:
-            line = self.cfg_child.stdout.readline()
-            sys.stdout.write(line)
-            self.q_client.put(line)
-            if line == '' and self.cfg_child.poll() != None:
-                break
+    # def logger(self):
+    #     while True:
+    #         line = self.cfg_child.stdout.readline()
+    #         sys.stdout.write(line)
+    #         self.q_client.put(line)
+    #         if line='' and self.cfg_child.poll() != None:
+    #             break
+    def logger_file(filename, log_out, stdout_s):
+        try:
+            run = self.uc.daqd_config['run']
+            with open(filename+str(run)+'.log','w') as outfile:
+                os.chdir(path)
+                outfile.write(log_out)
+                outfile.close()
+        except IOError as e:
+            print(e)
+
 
     def run(self):
         while not self.stopper.is_set():
@@ -127,7 +137,12 @@ class MSG_executer(Thread):
 
                 elif (self.item['command']=="ACQUIRE"):
                     # Data acquisition
-                    print ("Acquiring Data!!")
+                    # Increase run number
+                    self.uc.daqd_cfg['run']+=1
+                    self.uc.config_write()
+                    print ("Acquiring Data:: RUN %d"
+                            % self.uc.daqd_cfg['run'])
+
                     os.chdir("/home/viherbos/TOFPET2/sw_daq_tofpet2")
                     self.config_call = "./acquire_sipm_data " + \
                                     "--config config.ini " + \
@@ -141,7 +156,12 @@ class MSG_executer(Thread):
                                                 stdout=sbp.PIPE,
                                                 stderr=sbp.STDOUT
                                                 )
-                    self.logger()
+                    self.logger_file("data",
+                                     self.cfg_child.stdout.read(),
+                                     True)
+                    print "Acquisition run complete - See acquire.log for details"
+                    self.q_client.put("\n \n Acquisition run complete" + \
+                                    "- See acquire.log for details \n \n")
 
 
                 elif (self.item['command']=="C_FILTER"):
@@ -162,20 +182,13 @@ class MSG_executer(Thread):
                                                 stderr=sbp.STDOUT
                                                 )
 
-                    self.c_filt_output = self.cfg_child.stdout.read()
-
-                    try:
-                        with open("c_filt.log",'w') as outfile:
-                            os.chdir("/data")
-                            outfile.write(self.c_filt_output)
-                            outfile.close()
-                    except IOError as e:
-                        print(e)
+                    self.logger_file("c_filter.log",
+                                     self.cfg_child.stdout.read(),
+                                     True)
 
                     coincidence_to_hdf5(ldat_dir  = ".",
                                         ldat_name = self.item['arg2']+".ldat",
                                         hdf5_name = self.item['arg2']+".hdf")
-
 
                     print "Coincidence Processed - See coincidence.log for details"
                     self.q_client.put("\n \n Coincidence Processed" + \

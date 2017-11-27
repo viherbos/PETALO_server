@@ -90,7 +90,7 @@ class SCK_client(Thread):
                         # No JSON stream has been received
                         break
                     self.queue.task_done()
-                    self.s.close()
+                    self.s.shutdown()
                 except sk.error as e:
                     print ("Client couldn't open socket: %s" % e)
                     #os._exit(1)
