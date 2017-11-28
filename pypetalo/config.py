@@ -12,22 +12,22 @@ class DATA(object):
         if (read==True):
             self.config_read()
             self.data['localhost']=self.local_host
-            print self.data
         else:
             # These are default values.
             # WARNING this data can change, see config file
             # For remote application same port can be used in both ends
             # For remote application use local_host_name and true ext_ip
-            self.data= {'server_port':5005,
-                        'client_port':5006,
-                        'buffer_size':1024,
-                        'localhost':self.local_host,
-                        'ext_ip':'',
-                        'path_name' :"./sw_daq_tofpet2/",
-                        'socket'    :"/tmp/d.sock",
-                        'daq_type'  :"GBE",
-                        'daq_sharem':"/dev/shm/daqd_shm",
-                        'run':0
+            self.data= {'server_port'    :5005,
+                        'client_port'    :5006,
+                        'buffer_size'    :1024,
+                        'localhost'      :self.local_host,
+                        'ext_ip'         :'',
+                        'daqd_path_name' :"../sw_daq_tofpet2/",
+                        'data_path'      :"/data/",
+                        'socket'         :"/tmp/d.sock",
+                        'daq_type'       :"GBE",
+                        'daq_sharem'     :"/dev/shm/daqd_shm",
+                        'run'            :0
                         }
         self.config_write()
 

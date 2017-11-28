@@ -22,7 +22,6 @@ class DAQ(Thread):
         super(DAQ,self).__init__()
         self.stopper = stopper
         self.q_client = q_client
-        print self.uc.data
 
     def stop(self):
         self.daq_child.terminate()
@@ -32,7 +31,7 @@ class DAQ(Thread):
     def run(self):
         # Starts background process for DAQD communications
         try:
-            #self.daqlogfile = open(self.uc.out_log,'w')
+            self.daqlogfile = open(self.uc.data['data_path']+"daq.log",'w')
 
             #try:
             if os.access(self.uc.data['socket'], os.R_OK):
@@ -41,7 +40,7 @@ class DAQ(Thread):
                 os.remove(self.uc.data['daq_sharem'])
             #Remove Trash from daqd failures
 
-            self.daqd_call = self.uc.data['path_name'] + "daqd"
+            self.daqd_call = self.uc.data['daqd_path_name'] + "daqd"
             self.daqd_args1 = "--socket-name="+self.uc.data['socket']
             self.daqd_args2 = "--daq-type="+self.uc.data['daq_type']
 
@@ -52,12 +51,19 @@ class DAQ(Thread):
                                         stdout=sbp.PIPE,
                                         stderr=sbp.STDOUT
                                         )
-            #
+            if self.daq_child.poll() == None:
+                self.q_client.put("\n \n  _________________ \n" + \
+                                        "|   DAQ STARTED   | \n"+ \
+                                        "|_________________| \n"+ \
+                                  "\n \n")
             while self.daq_child.poll() == None:
                  pass
 
             print "DAQ THREAD IS DEAD"
-            self.q_client.put("\n \n DAQ is not working \n \n")
+            self.q_client.put("\n \n  _________________ \n" + \
+                                    "|   DAQ STOPPED   | \n"+ \
+                                    "|_________________| \n"+ \
+                              "\n \n")
             self.daqlogfile.write(self.daq_child.stdout.read())
             self.daqlogfile.close()
 
@@ -89,13 +95,18 @@ class MSG_executer(Thread):
     #             break
     def logger_file(self, filename, log_out, stdout_s):
         try:
-            run = self.uc.data['run']
-            with open(filename+str(run)+'.log','w') as outfile:
-                os.chdir(path)
+            dir_name = self.uc.data['data_path']
+            file_path = dir_name + filename + '.log'
+            with open(file_path,'w') as outfile:
                 outfile.write(log_out)
-                outfile.close()
+            if stdout_s==True:
+                line = sbp.check_output(['tail', file_path])
+                return line
+            else:
+                return None
         except IOError as e:
             print(e)
+            return None
 
 
     def run(self):
@@ -141,28 +152,32 @@ class MSG_executer(Thread):
                     # Increase run number
                     self.uc.data['run']+=1
                     self.uc.config_write()
-                    print ("Acquiring Data:: RUN %d"
-                            % self.uc.data['run'])
+                    print ("Acquiring Data:: RUN %d" % self.uc.data['run'])
 
                     os.chdir("/home/viherbos/TOFPET2/sw_daq_tofpet2")
                     self.config_call = "./acquire_sipm_data " + \
                                     "--config config.ini " + \
-                                    "-o " + self.item['arg2']+' ' \
+                                    "-o " + self.uc.data['data_path'] + \
+                                            self.item['arg2']+ "_" +\
+                                            str(self.uc.data['run'])+' ' \
                                     "--time "+ self.item['arg1']+' '\
                                     "--mode qdc"
-                    chain = self.config_call
 
-                    self.cfg_child = sbp.Popen( chain,
+                    self.cfg_child = sbp.Popen( self.config_call,
                                                 shell=True,
                                                 stdout=sbp.PIPE,
                                                 stderr=sbp.STDOUT
                                                 )
-                    self.logger_file("data",
-                                     self.cfg_child.stdout.read(),
-                                     True)
-                    print "Acquisition run complete - See acquire.log for details"
-                    self.q_client.put("\n \n Acquisition run complete" + \
-                                    "- See acquire.log for details \n \n")
+                    stdout_txt = self.cfg_child.stdout.read()
+                    last_line= self.logger_file(self.item['arg2'] + '_' +\
+                                                str(self.uc.data['run']),
+                                                stdout_txt,
+                                                True)
+                    message = "Acquisition run " + str(self.uc.data['run']) + \
+                              " complete - See log file for details"
+
+                    self.q_client.put(message + "\n" + last_line + "\n")
+                    print message
 
 
                 elif (self.item['command']=="C_FILTER"):
