@@ -98,13 +98,14 @@ class MSG_executer(Thread):
             file_path = dir_name + filename + '.log'
             with open(file_path,'w') as outfile:
                 outfile.write(log_out)
-            if stdout_s==True:
-                line = sbp.check_output(['tail', file_path])
-                return line
-            else:
-                return None
         except IOError as e:
             print(e)
+            return None
+        
+        if stdout_s==True:
+            line = sbp.check_output(['tail', file_path])
+            return line
+        else:
             return None
 
 
