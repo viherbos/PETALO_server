@@ -22,6 +22,7 @@ class DAQ(Thread):
         super(DAQ,self).__init__()
         self.stopper = stopper
         self.q_client = q_client
+        print self.uc.data
 
     def stop(self):
         self.daq_child.terminate()
@@ -31,18 +32,18 @@ class DAQ(Thread):
     def run(self):
         # Starts background process for DAQD communications
         try:
-            self.daqlogfile = open(self.uc.out_log,'w')
+            #self.daqlogfile = open(self.uc.out_log,'w')
 
             #try:
-            if os.access(self.uc.daqd_cfg['socket'], os.R_OK):
-                os.remove(self.uc.daqd_cfg['socket'])
-            if os.access(self.uc.daqd_cfg['daq_sharem'], os.R_OK):
-                os.remove(self.uc.daqd_cfg['daq_sharem'])
+            if os.access(self.uc.data['socket'], os.R_OK):
+                os.remove(self.uc.data['socket'])
+            if os.access(self.uc.data['daq_sharem'], os.R_OK):
+                os.remove(self.uc.data['daq_sharem'])
             #Remove Trash from daqd failures
 
-            self.daqd_call = self.uc.daqd_cfg['path_name'] + "daqd"
-            self.daqd_args1 = "--socket-name="+self.uc.daqd_cfg['socket']
-            self.daqd_args2 = "--daq-type="+self.uc.daqd_cfg['daq_type']
+            self.daqd_call = self.uc.data['path_name'] + "daqd"
+            self.daqd_args1 = "--socket-name="+self.uc.data['socket']
+            self.daqd_args2 = "--daq-type="+self.uc.data['daq_type']
 
             chain = self.daqd_call+' '+self.daqd_args1+' '+self.daqd_args2+' '
 
@@ -86,9 +87,9 @@ class MSG_executer(Thread):
     #         self.q_client.put(line)
     #         if line='' and self.cfg_child.poll() != None:
     #             break
-    def logger_file(filename, log_out, stdout_s):
+    def logger_file(self, filename, log_out, stdout_s):
         try:
-            run = self.uc.daqd_config['run']
+            run = self.uc.data['run']
             with open(filename+str(run)+'.log','w') as outfile:
                 os.chdir(path)
                 outfile.write(log_out)
@@ -138,10 +139,10 @@ class MSG_executer(Thread):
                 elif (self.item['command']=="ACQUIRE"):
                     # Data acquisition
                     # Increase run number
-                    self.uc.daqd_cfg['run']+=1
+                    self.uc.data['run']+=1
                     self.uc.config_write()
                     print ("Acquiring Data:: RUN %d"
-                            % self.uc.daqd_cfg['run'])
+                            % self.uc.data['run'])
 
                     os.chdir("/home/viherbos/TOFPET2/sw_daq_tofpet2")
                     self.config_call = "./acquire_sipm_data " + \
@@ -258,5 +259,5 @@ if __name__ == "__main__":
 
     # First time Jason writing
     # json_utils = JSON_config(sh_data.config_filename,
-    #                          sh_data.daqd_cfg_init)
+    #                          sh_data.data_init)
     # json_utils.config_write()
