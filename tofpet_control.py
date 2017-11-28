@@ -101,7 +101,7 @@ class MSG_executer(Thread):
         except IOError as e:
             print(e)
             return None
-        
+
         if stdout_s==True:
             line = sbp.check_output(['tail', file_path])
             return line
@@ -242,6 +242,11 @@ class MSG_executer(Thread):
                         self.cfg_child.terminate()
                     except:
                         pass
+
+                elif (self.item['command']=='RESTART'):
+                    print ("Restart RUNS COUNTER")
+                    self.uc.data['run'] = 0
+                    self.uc.config_write()
 
                 else:
                     sys.stdout.write("Command Sequence not recognized")
