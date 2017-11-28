@@ -84,8 +84,6 @@ class MSG_executer(Thread):
         self.stopper = stopper
         self.q_client = q_client
 
-
-
     # def logger(self):
     #     while True:
     #         line = self.cfg_child.stdout.readline()
@@ -93,6 +91,7 @@ class MSG_executer(Thread):
     #         self.q_client.put(line)
     #         if line='' and self.cfg_child.poll() != None:
     #             break
+
     def logger_file(self, filename, log_out, stdout_s):
         try:
             dir_name = self.uc.data['data_path']
@@ -128,17 +127,21 @@ class MSG_executer(Thread):
                     # Basic configuration: FEBD + SiPM
                     # Use checkout from subprocess
                     print ("Configuration Operation: QDC+TDC Calibration")
-                    os.chdir("/home/viherbos/TOFPET2/sw_daq_tofpet2")
+                    self.actual_path = os.getcwd()
+                    os.chdir(self.uc.data['daqd_path_name'])
                     self.config_call = "sh " + "configuration.template.sh"
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
                                                 shell=True)
+                    os.chdir(self.actual_path)
 
 
                 elif (self.item['command']=="TEMP"):
                     print ("Read TOFPET Temperatures")
-                    os.chdir("/home/viherbos/TOFPET2/sw_daq_tofpet2")
+                    self.actual_path = os.getcwd()
+                    os.chdir(self.uc.data['daqd_path_name'])
+
                     self.config_call = "./read_temperature_sensors"
                     chain = self.config_call
 
@@ -146,6 +149,7 @@ class MSG_executer(Thread):
                                                 shell=True
                                                 #stdout=sbp.PIPE
                                                 )
+                    os.chdir(self.actual_path)
 
                 elif (self.item['command']=="ACQUIRE"):
                     # Data acquisition
@@ -154,7 +158,9 @@ class MSG_executer(Thread):
                     self.uc.config_write()
                     print ("Acquiring Data:: RUN %d" % self.uc.data['run'])
 
-                    os.chdir("/home/viherbos/TOFPET2/sw_daq_tofpet2")
+                    self.actual_path = os.getcwd()
+                    os.chdir(self.uc.data['daqd_path_name'])
+
                     self.config_call = "./acquire_sipm_data " + \
                                     "--config config.ini " + \
                                     "-o " + self.uc.data['data_path'] + \
@@ -178,37 +184,53 @@ class MSG_executer(Thread):
 
                     self.q_client.put(message + "\n" + last_line + "\n")
                     print message
+                    os.chdir(self.actual_path)
 
 
                 elif (self.item['command']=="C_FILTER"):
                     # Coincidence Filter
-                    os.chdir("/home/viherbos/TOFPET2/sw_daq_tofpet2")
-                    # ./convert_raw_to_coincidence --config config.ini -i data/my_data -o data/my_data_coincidence --writeBinary
-                    print ("Applying coarse coincidence filter")
-                    self.config_call = "./convert_raw_to_coincidence " + \
-                                    "--config config.ini " + \
-                                    "-i "+ self.item['arg1']+' '\
-                                    "-o "+ self.item['arg2']+' '\
-                                    "--writeBinary"
-                    chain = self.config_call
+                    self.actual_path = os.getcwd()
+                    os.chdir(self.uc.data['daqd_path_name'])
 
-                    self.cfg_child = sbp.Popen( chain,
-                                                shell=True,
-                                                stdout=sbp.PIPE,
-                                                stderr=sbp.STDOUT
-                                                )
+                    self.n_runs     = int(self.item['arg2'])
+                    self.last_run   = self.uc.data['run']
+                    print (("Applying coincidence filter to LAST %d" + \
+                            " RUNS") % self.n_runs)
 
-                    self.logger_file("c_filter.log",
-                                     self.cfg_child.stdout.read(),
-                                     True)
+                    for i in range(self.last_run-self.n_runs+1,self.last_run+1):
+                        input_file  =   self.item['arg1']+"_"+str(i)
+                        output_file =   "c_"+self.item['arg1']+"_"+str(i)
 
-                    coincidence_to_hdf5(ldat_dir  = ".",
-                                        ldat_name = self.item['arg2']+".ldat",
-                                        hdf5_name = self.item['arg2']+".hdf")
+                        self.config_call = "./convert_raw_to_coincidence " + \
+                                        "--config config.ini " + \
+                                        "-i " + self.uc.data['data_path'] + \
+                                                input_file  + ' ' + \
+                                        "-o " + self.uc.data['data_path'] + \
+                                                output_file + ' ' + \
+                                        "--writeBinary"
 
-                    print "Coincidence Processed - See coincidence.log for details"
-                    self.q_client.put("\n \n Coincidence Processed" + \
-                                    "- See coincidence.log for details \n \n")
+                        self.cfg_child = sbp.Popen( self.config_call,
+                                                    shell=True,
+                                                    stdout=sbp.PIPE,
+                                                    stderr=sbp.STDOUT
+                                                    )
+                        stdout_txt = self.cfg_child.stdout.read()
+                        last_line= self.logger_file(output_file,
+                                                    stdout_txt,
+                                                    True)
+
+                        coincidence_to_hdf5(ldat_dir  = ".",
+                                            ldat_name = self.uc.data['data_path'] + \
+                                                        output_file + ".ldat",
+                                            hdf5_name = self.uc.data['data_path'] + \
+                                                        output_file + ".hdf")
+
+                        message = "Coincidence for run " + str(i) + " processed " +\
+                                  "- See log file for details"
+                        self.q_client.put(message + "\n" + last_line + "\n")
+                        print message
+
+                    os.chdir(self.actual_path)
 
 
 
