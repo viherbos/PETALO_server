@@ -219,13 +219,16 @@ class MSG_executer(Thread):
                         last_line= self.logger_file(output_file,
                                                     stdout_txt,
                                                     True)
-
-                        coincidence_to_hdf5(ldat_dir  = ".",
-                                            ldat_name = self.uc.data['data_path'] + \
-                                                        output_file + ".ldat",
-                                            hdf5_name = self.uc.data['data_path'] + \
-                                                        output_file + ".hdf")
-
+                        try:
+                            coincidence_to_hdf5(ldat_dir  = ".",
+                                                ldat_name = self.uc.data['data_path'] + \
+                                                            output_file + ".ldat",
+                                                hdf5_name = self.uc.data['data_path'] + \
+                                                            output_file + ".hdf")
+                        except:
+                            self.q_client.put("Conversion Error \n")
+                            print "Conversion Error"
+                            
                         message = "Coincidence for run " + str(i) + " processed " +\
                                   "- See log file for details"
                         self.q_client.put(message + "\n" + last_line + "\n")
