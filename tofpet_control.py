@@ -147,9 +147,11 @@ class MSG_executer(Thread):
                     chain = self.config_call
 
                     self.cfg_child = sbp.Popen( chain,
-                                                shell=True
-                                                #stdout=sbp.PIPE
+                                                shell=True,
+                                                stdout=sbp.PIPE,
+                                                stderr=sbp.STDOUT
                                                 )
+                    stdout_txt = self.cfg_child.stdout.read()
                     os.chdir(self.actual_path)
 
                 elif (self.item['command']=="ACQUIRE"):
@@ -185,6 +187,7 @@ class MSG_executer(Thread):
 
                     self.q_client.put(message + "\n" + last_line + "\n")
                     print message
+
                     os.chdir(self.actual_path)
 
 
@@ -224,11 +227,13 @@ class MSG_executer(Thread):
                                                 ldat_name = self.uc.data['data_path'] + \
                                                             output_file + ".ldat",
                                                 hdf5_name = self.uc.data['data_path'] + \
-                                                            output_file + ".hdf")
+                                                            output_file + ".hdf",
+                                                env_name = self.uc.data['data_path'] + \
+                                                            input_file + ".env")
                         except:
                             self.q_client.put("Conversion Error \n")
                             print "Conversion Error"
-                            
+
                         message = "Coincidence for run " + str(i) + " processed " +\
                                   "- See log file for details"
                         self.q_client.put(message + "\n" + last_line + "\n")
