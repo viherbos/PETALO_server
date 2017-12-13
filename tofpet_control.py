@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from threading import Thread, Event
 from Queue import Queue, Empty
 import subprocess as sbp
@@ -108,6 +109,21 @@ class MSG_executer(Thread):
         else:
             return None
 
+    def env_file(self, filename, env_out):
+        try:
+            dir_name = self.uc.data['data_path']
+            file_path = dir_name + filename + '.env'
+
+            with open(file_path,'w') as outfile:
+                pos=env_out.find("ºC")
+                while pos>0:
+                    print (env_out[pos-2:pos])
+                    outfile.write(env_out[pos-2:pos]+"\n")
+                    pos=env_out.find("ºC",pos+1)
+        except IOError as e:
+            print(e)
+
+
 
     def run(self):
         while not self.stopper.is_set():
@@ -152,6 +168,7 @@ class MSG_executer(Thread):
                                                 stderr=sbp.STDOUT
                                                 )
                     stdout_txt = self.cfg_child.stdout.read()
+                    self.q_client.put(stdout_txt)
                     os.chdir(self.actual_path)
 
                 elif (self.item['command']=="ACQUIRE"):
@@ -187,6 +204,20 @@ class MSG_executer(Thread):
 
                     self.q_client.put(message + "\n" + last_line + "\n")
                     print message
+
+                    self.config_call = "./read_temperature_sensors"
+                    chain = self.config_call
+
+                    self.cfg_child = sbp.Popen( chain,
+                                                shell=True,
+                                                stdout=sbp.PIPE,
+                                                stderr=sbp.STDOUT
+                                                )
+                    stdout_txt = self.cfg_child.stdout.read()
+                    self.q_client.put(stdout_txt)
+                    self.env_file(self.item['arg2'] + '_' +\
+                                                str(self.uc.data['run']),
+                                                stdout_txt)
 
                     os.chdir(self.actual_path)
 

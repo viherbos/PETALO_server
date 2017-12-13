@@ -29,7 +29,6 @@ def coincidence_to_hdf5(ldat_dir  = ".",
     with open(env_name, "rb") as f:
         while True:
             data = f.readline()
-            print data
             if data=="": break
             j=j+1
             env_array.append(float(data))
