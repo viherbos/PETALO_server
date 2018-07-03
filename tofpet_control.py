@@ -273,6 +273,55 @@ class MSG_executer(Thread):
                     os.chdir(self.actual_path)
 
 
+                elif (self.item['command']=="RAW_FILTER"):
+                    # Coincidence Filter
+                    self.actual_path = os.getcwd()
+                    os.chdir(self.uc.data['daqd_path_name'])
+
+                    self.n_runs     = int(self.item['arg2'])
+                    self.last_run   = self.uc.data['run']
+                    print (("Converting raw data to singles LAST %d" + \
+                            " RUNS") % self.n_runs)
+
+                    for i in range(self.last_run-self.n_runs+1,self.last_run+1):
+                        input_file  =   self.item['arg1']+"_"+str(i)
+                        output_file =   "c_"+self.item['arg1']+"_"+str(i)
+
+                        self.config_call = "./convert_raw_to_singles " + \
+                                        "--config config.ini " + \
+                                        "-i " + self.uc.data['data_path'] + \
+                                                input_file  + ' ' + \
+                                        "-o " + self.uc.data['data_path'] + \
+                                                output_file + ' ' + \
+                                        "--writeBinary"
+
+                        self.cfg_child = sbp.Popen( self.config_call,
+                                                    shell=True,
+                                                    stdout=sbp.PIPE,
+                                                    stderr=sbp.STDOUT
+                                                    )
+                        stdout_txt = self.cfg_child.stdout.read()
+                        last_line= self.logger_file(output_file,
+                                                    stdout_txt,
+                                                    True)
+                        try:
+                            raw_singles_to_hdf5(ldat_dir  = ".",
+                                                ldat_name = self.uc.data['data_path'] + \
+                                                            output_file + ".ldat",
+                                                hdf5_name = self.uc.data['data_path'] + \
+                                                            output_file + ".hdf",
+                                                env_name = self.uc.data['data_path'] + \
+                                                            input_file + ".env")
+                        except:
+                            self.q_client.put("Conversion Error \n")
+                            print "Conversion Error"
+
+                        message = "Coincidence for run " + str(i) + " processed " +\
+                                  "- See log file for details"
+                        self.q_client.put(message + "\n" + last_line + "\n")
+                        print message
+
+                    os.chdir(self.actual_path)
 
                 elif (self.item['command']=='STOP'):
                     print ("Quit Control")
