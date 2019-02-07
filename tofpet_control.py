@@ -14,7 +14,7 @@ from pypetalo.comms import SCK_server as SCK_server
 from pypetalo.comms import SCK_client as SCK_client
 
 from pypetalo.file_utils import coincidence_to_hdf5 as coincidence_to_hdf5
-
+from pypetalo.file_utils import raw_singles_to_hdf5 as from raw_singles_to_hdf5
 
 class DAQ(Thread):
 
@@ -187,7 +187,8 @@ class MSG_executer(Thread):
                                             self.item['arg2']+ "_" +\
                                             str(self.uc.data['run'])+' ' \
                                     "--time "+ self.item['arg1']+' '\
-                                    "--mode qdc"
+                                    "--mode qdc"+' '\
+                                    "--sweep"
 
                     self.cfg_child = sbp.Popen( self.config_call,
                                                 shell=True,
