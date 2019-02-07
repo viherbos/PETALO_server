@@ -1,0 +1,27 @@
+{
+    "NOISE": {
+        "fe_ib2": 1, 
+        "fe_ib1": 40
+    }, 
+    "THRESHOLDS": {
+        "vth_t2": 24, 
+        "vth_t1": 24, 
+        "vth_e": 60
+    }, 
+    "INTEG": {
+        "max_intg_time": 127, 
+        "min_intg_time": 16
+    }, 
+    "DISC_LSB": {
+        "disc_lsb_e": 40
+    }, 
+    "QDC_GAIN": {
+        "v_att_diff_bias_ig": 56, 
+        "att": 6, 
+        "integ_source_sw": 3
+    }, 
+    "BASELINES": {
+        "baseline_t": 25, 
+        "baseline_e": 60
+    }
+}
